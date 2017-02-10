@@ -1,0 +1,15 @@
+doctype html
+html(lang='en')
+  head
+    meta(charset='utf-8')
+    title AOSC Insomnia Builder
+    .row
+      p.
+        Host Status: <strong>#{params.status}</strong>&nbsp;
+        Host Name: <strong>#{params.Name}</strong>&nbsp;
+        Operating System: <strong>#{params.OperatingSystem}</strong>&nbsp;
+        CPU Count: <strong>#{params.NCPU}</strong>&nbsp;
+        Runtime: <strong>#{params.DefaultRuntime}</strong>
+    .row
+      p Build Status: <strong>#{params.busy}</strong>&nbsp;&nbsp;
+        a(href="/insomnia_build") View Build

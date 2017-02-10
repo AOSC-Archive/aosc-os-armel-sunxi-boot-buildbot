@@ -1,0 +1,35 @@
+{
+  "name": "aosc-sunxi-buildbot",
+  "version": "1.0.0",
+  "description": "The SUNXI model kernel image builder for Anthon Open Source Community (AOSC).",
+  "main": "index.js",
+  "dependencies": {
+    "bluebird": "^3.4.7",
+    "body-parser": "^1.16.0",
+    "dockerode": "^2.3.1",
+    "express": "^4.14.1",
+    "express-github-webhook": "^1.0.5",
+    "pug": "^2.0.0-beta11",
+    "request": "^2.79.0",
+    "socket.io": "^1.7.2",
+    "tempfile2": "^2.0.2",
+    "through2": "^2.0.3"
+  },
+  "devDependencies": {
+    "mocha": "^3.2.0",
+    "should": "^11.2.0",
+    "supertest": "^3.0.0"
+  },
+  "scripts": {
+    "test": "exit 127"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AOSC-Dev/website-site-ng.git"
+  },
+  "keywords": [
+    "buildbot"
+  ],
+  "author": "liushuyu",
+  "license": "GPL-2.0"
+}
