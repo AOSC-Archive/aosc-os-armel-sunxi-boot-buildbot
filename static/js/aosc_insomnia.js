@@ -87,6 +87,10 @@
               AOSCHypoxia.terminal.io.print(data);
           }
       });
+      socket.on('termrst', function() {
+        AOSCHypoxia.terminal.clearHome();
+        AOSCHypoxia.terminal.io.print('\r');
+      });
       socket.on('renderfile', function(data) {
           AOSCHypoxia.terminal.io.print(data);
       });

@@ -16,7 +16,9 @@ module.exports.listen = (app) => {
           return;
         };
         socket.emit('buildinfo', docker.getBuilderInfo());
-        docker.getBuilderLog(time,(data)=>{socket.emit('termupdate', data);});
+        docker.getBuilderLog(time,(data)=>{
+          socket.emit('termupdate', data);
+        });
       });
     });
 

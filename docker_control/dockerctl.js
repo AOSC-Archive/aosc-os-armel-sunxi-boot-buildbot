@@ -21,12 +21,16 @@ function isBuilding() {
 
 exports.getBuilderLog = (since, callback) => {
     var epoch = 0;
+    var buffer = '';
     if (!isBuilding) {callback(null);}
     if (since) {epoch = since;}
     containerObj.logs({since: epoch, stdout: 1, stderr: 1}, (err, data) => {
       if (err) {log.error('Docker API: Fetch log: ' + err);}
       data.on('data', (chunk)=>{
-        callback(chunk.toString());
+        buffer += chunk;  // accumulate logs
+      });
+      data.on('end', ()=>{
+        callback(buffer);
       });
     });
 }
