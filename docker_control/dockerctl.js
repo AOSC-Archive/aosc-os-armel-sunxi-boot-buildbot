@@ -2,14 +2,17 @@
 'use strict';
 const Docker = require('dockerode');
 const fs = require('fs');
+const cfg = require('./config_manager');
 const imgName = 'aosc-insomnia-sunxi';
 const tempfile = require('tempfile2');
 const request = require('request');
 const bluebird = require('bluebird');
 const socketio = require('../web_control/socketio');
 const through = require('through2');
+const path = require('path');
 let log = require('../utils/log.js');
-var docker, containerObj;
+let ccpath = cfg.getConfig('cross_compiler_path');
+var docker, containerObj, ccchain;
 var dockerBuilder = {};
 
 function isBuilding() {
@@ -33,10 +36,7 @@ exports.getBuilderInfo = () => {
 }
 
 exports.dockerinit = () => { // '127.0.0.1:8777'
-    docker = new Docker({
-        host: '127.0.0.1',
-        port: 8777
-    });
+    docker = new Docker(cfg.getConfig('docker'));
     // Test if our connection is vaild (since Dockerode won't throw errors on error)
     docker.ping((err, res) => {
         if (!res) {
@@ -103,12 +103,30 @@ function getReleases(callback) {
     });
 }
 
+function getCCChain() {
+    var ccbinpath = ccpath + '/bin/';
+    console.log(ccbinpath);
+    if (!ccpath || !fs.existsSync(ccbinpath)) {
+      log.error('Builder: Where\'s your cross compiler? I can\'t find it...');
+      return null;
+    }
+    for (let file of fs.readdirSync(ccbinpath)) {
+      var prefix = file.match(/(.*-)gcc/);
+      if (prefix) {return prefix[1];}
+    }
+}
+
 function genScript(callback) {
+    /* In this step, we'll generate script from our template script,
+    we'll figure out cross-compiling chain and latest kernel release together
+    with U-Boot (Currently remain manually updated) then fill into the script
+    */
     var fn = tempfile({
         path: '/tmp',
         ext: '.sh'
     });
     var script;
+    ccchain = '/workspace/cross-gcc/bin/' + getCCChain();
     var writeScript = (fn, data) => {
         fs.open(fn, 'w+', (err, fd) => {
             if (err) {
@@ -124,8 +142,10 @@ function genScript(callback) {
         }
         var script = fs.readFileSync(fd, 'utf-8');
         new Promise((res, rej) => {
+            script = script.replace('++CROSS_CHAIN++', ccchain);
             getReleases((data) => {
-                script = script.replace('++LINUX_SRC++', data.kernel).replace('++UBOOT_SRC++', data.ub);
+                script = script.replace('++LINUX_SRC++', data.kernel)
+                .replace('++UBOOT_SRC++', data.ub);
                 res();
             });
         }).then(() => {
@@ -146,12 +166,15 @@ exports.startBuild = () => {
         log.warn('Docker API: Another build is in progress, bailing out...');
         return;
     }
+    var ccpath_copy = ccpath;
     genScript((fn) => {
         docker.createContainer({
             Image: imgName,
             Tty: true,
             Cmd: ['bash', '/workspace/builder.sh'],
-            Binds: [fn + ':/workspace/builder.sh:ro']
+            Binds: [fn + ':/workspace/builder.sh:ro',
+            ccpath_copy + ':/workspace/cross-gcc:ro',
+            path.resolve('./out/') + ':/workspace/out:rw']  // Here we "mount" the generated script into the container
         }, (err, container) => {
             if (err) {
                 log.error('Docker API: Failed to create container: ' + err);
@@ -168,6 +191,12 @@ exports.startBuild = () => {
                     stdout: true,
                     stderr: true
                 }, (err, stream) => {
+                    stream.on('end', () => {
+                      var EndTime = Date.now() / 1000;
+                      dockerBuilder.alive = false;
+                      dockerBuilder.stop = EndTime;
+                      socketio.broadcast('buildstop', EndTime);
+                    });
                     stream.pipe(through.obj((chunk, enc, callback) => {
                       socketio.broadcast('termupdate', chunk.toString());
                       callback();
@@ -175,7 +204,7 @@ exports.startBuild = () => {
                 });
             });
         });
-    });
+    });  // end of genscript callbacks
 }
 
 })();

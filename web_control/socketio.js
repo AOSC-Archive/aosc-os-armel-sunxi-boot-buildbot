@@ -1,3 +1,5 @@
+(() => {
+'use strict';
 const socketio = require('socket.io');
 const docker   = require('../docker_control/dockerctl');
 var api, io, gsocket;
@@ -25,3 +27,4 @@ module.exports.broadcast = (sig, msg) => {
   if (!api) {return;}
   api.emit(sig, msg);
 }
+})();

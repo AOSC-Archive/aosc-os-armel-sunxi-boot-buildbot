@@ -66,7 +66,7 @@ if [ "$BUILD_LINUX" != "0" ]; then
 	cp ../sunxi-nokvm-config .config
 	echo "Configured"
 	# FIXME: hard coded parallel.
-	make ARCH=arm CROSS_COMPILE="${CROSS_CHAIN}" -j$(nproc) 2>&1
+	make ARCH=arm CROSS_COMPILE="${CROSS_CHAIN}" -j"$(nproc)" 2>&1
 	echo "Built"
 	TMPDIR=$(mktemp -d)
 	make ARCH=arm CROSS_COMPILE="${CROSS_CHAIN}" INSTALL_MOD_PATH="$TMPDIR" modules_install 2>&1
@@ -83,7 +83,7 @@ if [ "$BUILD_LINUX" != "0" ]; then
 		popd
 		unset KDIR
 	done
-	depmod -b "$TMPDIR" $(basename $(readlink -f $EXTRA_KMOD_DIR/../..))
+	depmod -b "$TMPDIR" "$(basename $(readlink -f $EXTRA_KMOD_DIR/../..))"
 	echo "Extra modules built"
 	cp -r -- "$TMPDIR"/lib/modules/ "$OUT_DIR"/linux-sunxi-nokvm/
 	rm -r -- "$TMPDIR"
@@ -92,7 +92,7 @@ if [ "$BUILD_LINUX" != "0" ]; then
 	mkdir -p "$LOG_DIR"/linux-sunxi-kvm
 	cp ../sunxi-kvm-config .config
 	echo "Configured"
-	make ARCH=arm CROSS_COMPILE="${CROSS_CHAIN}" -j$(nproc) 2>&1
+	make ARCH=arm CROSS_COMPILE="${CROSS_CHAIN}" -j"$(nproc)" 2>&1
 	echo "Built"
 	TMPDIR=$(mktemp -d)
 	make ARCH=arm CROSS_COMPILE="${CROSS_CHAIN}" INSTALL_MOD_PATH="$TMPDIR" modules_install 2>&1
@@ -105,7 +105,7 @@ if [ "$BUILD_LINUX" != "0" ]; then
 		export KDIR=$PWD ARCH=arm CROSS_COMPILE="${CROSS_CHAIN}"
 		pushd "${i}"
 		sh build.sh 2>&1
-		cp *.ko "$EXTRA_KMOD_DIR/"
+		cp -- *.ko "$EXTRA_KMOD_DIR/"
 		popd
 		unset KDIR
 	done

@@ -1,3 +1,4 @@
+'use strict';
 var app = require('express')();
 const express = require('express');
 const server = require('http').Server(app);
@@ -9,7 +10,6 @@ app.set('trust proxy', 'loopback');
 server.listen(5000, function () {
   console.log('combined server: Services listening at port ' + server.address().port);
 });
-require('./docker_control/builderctl.js');
 // WebPage Rendering - Engine (PugJS)
 app.set('view engine', 'pug');
 app.set('views', './views');
