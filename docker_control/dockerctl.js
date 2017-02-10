@@ -105,7 +105,6 @@ function getReleases(callback) {
 
 function getCCChain() {
     var ccbinpath = ccpath + '/bin/';
-    console.log(ccbinpath);
     if (!ccpath || !fs.existsSync(ccbinpath)) {
       log.error('Builder: Where\'s your cross compiler? I can\'t find it...');
       return null;
@@ -168,6 +167,10 @@ exports.startBuild = () => {
     }
     var ccpath_copy = ccpath;
     genScript((fn) => {
+      var logfn = tempfile({
+          path: './logs/',
+          ext: '.log'
+      });
         docker.createContainer({
             Image: imgName,
             Tty: true,
@@ -198,6 +201,7 @@ exports.startBuild = () => {
                       socketio.broadcast('buildstop', EndTime);
                     });
                     stream.pipe(through.obj((chunk, enc, callback) => {
+                      fs.writeFile(logfn, chunk.toString(), {flag: 'a'}, (err) => {return;});
                       socketio.broadcast('termupdate', chunk.toString());
                       callback();
                     }));

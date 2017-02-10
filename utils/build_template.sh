@@ -138,7 +138,7 @@ fi
 echo "Tarring final tarball..."
 TARBALL_NAME="aosc-os-armel-sunxi-boot-$(date +%Y%m%d)-g${GIT_REV}-$(basename ${LINUX_DIR})-$(basename ${UBOOT_DIR})"
 mkdir "${STORE_DIR}"
-tar cJf ${STORE_DIR}/"${TARBALL_NAME}.tar.xz" "${OUT_DIR}/*"
+tar cJf ${STORE_DIR}/"${TARBALL_NAME}.tar.xz" "${OUT_DIR}/"*
 FILE_SIZE=$(stat -c "%s" "${STORE_DIR}/${TARBALL_NAME}.tar.xz")
 if [[ $((FILE_SIZE)) -lt 20000000 ]]; then
 	echo "Resulting file too small (only ${FILE_SIZE} bytes), suspecting a build failure!"
