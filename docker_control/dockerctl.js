@@ -10,6 +10,7 @@ const bluebird = require('bluebird');
 const socketio = require('../web_control/socketio');
 const through = require('through2');
 const path = require('path');
+const log_db = require('./log-db');
 let log = require('../utils/log.js');
 let ccpath = cfg.getConfig('cross_compiler_path');
 var docker, containerObj, ccchain;
@@ -203,6 +204,7 @@ exports.startBuild = () => {
                       dockerBuilder.alive = false;
                       dockerBuilder.stop = EndTime;
                       socketio.broadcast('buildstop', EndTime);
+                      log_db.saveLogEntry(path.resolve(logfn), dockerBuilder);
                     });
                     stream.pipe(through.obj((chunk, enc, callback) => {
                       fs.writeFile(logfn, chunk.toString(), {flag: 'a'}, (err) => {return;});

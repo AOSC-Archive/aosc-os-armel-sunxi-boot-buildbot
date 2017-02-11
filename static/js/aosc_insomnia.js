@@ -111,7 +111,7 @@
           render_time(time - build_info.start);
       });
       socket.on('logview', function(data) {
-          AOSCHypoxia.terminal.io.print(data.join('\r\n') + '\r\n');
+          AOSCHypoxia.terminal.io.print(data + '\r\n');
       });
       socket.on('disconnect', function() {
           last_ack = Date.now() / 1000;

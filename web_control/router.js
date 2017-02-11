@@ -16,7 +16,6 @@ router.get('/', (err, res) => {
 
 (function init() {
     dockerctl.dockerinit();
-    dockerctl.startBuild();
 })();
 
 router.get('/insomnia_build', (err, res) => {
