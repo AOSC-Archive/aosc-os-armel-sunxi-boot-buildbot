@@ -97,7 +97,7 @@ exports.updateImage = () => {
 exports.isBuilding = isBuilding;
 
 exports.triggerBuild = (repo) => {
-  const map = {'AOSC-Dev/aosc-os-armel-sunxi-boot': 'sunxi-boot', 'AOSC-Dev/aosc-appstream-data': 'aosc-appstream-pkg'};
+  const map = {'AOSC-Dev/aosc-os-armel-sunxi-boot': 'sunxi-boot', 'AOSC-Dev/aosc-appstream-data': 'appstream-pkg'};
   if (!map[repo]) {
     log.warn('Docker API: The repository ' + repo + ' is unknown to me...');
     return;
@@ -147,8 +147,8 @@ function startBuild(builder) {
                         socketio.broadcast('buildstop', EndTime);
                         log_db.saveLogEntry(path.resolve(logfn), dockerBuilder);
                         container.remove({}, () => {});
-                        if (queue.length() > 0) {
-                          console.log('Docker Builder: Catching up with backlog: ' + queue.length() + ' remaining')
+                        if (queue.length > 0) {
+                          console.log('Docker Builder: Catching up with backlog: ' + queue.length + ' remaining')
                           startBuild(queue.pop());
                         }
                     });
