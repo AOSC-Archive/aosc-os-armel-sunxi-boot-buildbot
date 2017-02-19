@@ -147,6 +147,10 @@ function startBuild(builder) {
                         socketio.broadcast('buildstop', EndTime);
                         log_db.saveLogEntry(path.resolve(logfn), dockerBuilder);
                         container.remove({}, () => {});
+                        if (queue.length() > 0) {
+                          console.log('Docker Builder: Catching up with backlog: ' + queue.length() + ' remaining')
+                          startBuild(queue.pop());
+                        }
                     });
                     stream.pipe(through.obj((chunk, enc, callback) => {
                         fs.writeFile(logfn, chunk.toString(), {
