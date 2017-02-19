@@ -5,15 +5,13 @@ const fs = require('fs');
 const cfg = require('./config_manager');
 const imgName = 'aosc-insomnia-sunxi';
 const tempfile = require('tempfile2');
-const request = require('request');
-const bluebird = require('bluebird');
+const path = require('path');
 const socketio = require('../web_control/socketio');
 const through = require('through2');
-const path = require('path');
 const log_db = require('./log-db');
 let log = require('../utils/log.js');
-let ccpath = cfg.getConfig('cross_compiler_path');
-var docker, containerObj, ccchain;
+var docker, containerObj;
+var queue = [];
 var dockerBuilder = {};
 
 function isBuilding() {
@@ -23,21 +21,34 @@ function isBuilding() {
 exports.getBuilderLog = (since, callback) => {
     var epoch = 0;
     var buffer = '';
-    if (!isBuilding) {callback(null);}
-    if (since) {epoch = since;}
-    containerObj.logs({since: epoch, stdout: 1, stderr: 1}, (err, data) => {
-      if (err) {log.error('Docker API: Fetch log: ' + err);}
-      data.on('data', (chunk)=>{
-        buffer += chunk;  // accumulate logs
-      });
-      data.on('end', ()=>{
-        callback(buffer);
-      });
+    if (!isBuilding) {
+        callback(null);
+    }
+    if (since) {
+        epoch = since;
+    }
+    containerObj.logs({
+        since: epoch,
+        stdout: 1,
+        stderr: 1
+    }, (err, data) => {
+        if (err) {
+            log.error('Docker API: Fetch log: ' + err);
+        }
+        data.on('data', (chunk) => {
+            buffer += chunk; // accumulate logs
+        });
+        data.on('end', () => {
+            callback(buffer);
+        });
     });
 }
 
 exports.getBuilderInfo = () => {
-    return {start: dockerBuilder.startTime, id: dockerBuilder.id};
+    return {
+        start: dockerBuilder.startTime,
+        id: dockerBuilder.id
+    };
 }
 
 exports.dockerinit = () => { // '127.0.0.1:8777'
@@ -85,113 +96,43 @@ exports.updateImage = () => {
 
 exports.isBuilding = isBuilding;
 
+exports.triggerBuild = (repo) => {
+  const map = {'AOSC-Dev/aosc-os-armel-sunxi-boot': 'sunxi-boot', 'AOSC-Dev/aosc-appstream-data': 'aosc-appstream-pkg'};
+  if (!map[repo]) {
+    log.warn('Docker API: The repository ' + repo + ' is unknown to me...');
+    return;
+  }
+  var builder = require('./builders/' + map[repo]);
+  return startBuild(builder);
+};
 
-function getReleases(callback) {
-    var releases = {};
-    const u_boot = 'ftp://ftp.denx.de/pub/u-boot/u-boot-2017.03-rc1.tar.bz2';
-    releases.ub = u_boot;
-    request.get({
-        url: 'https://www.kernel.org/releases.json',
-        json: true
-    }, (err, res, data) => {
-        if (err) {
-            log.error('Builder: Failed to determine latest kernel release!' + err);
-            callback(null);
-        }
-        let latest = data.latest_stable.version;
-        for (let i of data.releases) {
-            if (i.version == latest) {
-                releases.kernel = i.source;
-            }
-        }
-        callback(releases);
-    });
-}
-
-function getCCChain() {
-    var ccbinpath = ccpath + '/bin/';
-    if (!ccpath || !fs.existsSync(ccbinpath)) {
-      log.error('Builder: Where\'s your cross compiler? I can\'t find it...');
-      return null;
-    }
-    for (let file of fs.readdirSync(ccbinpath)) {
-      var prefix = file.match(/(.*-)gcc/);
-      if (prefix) {return prefix[1];}
-    }
-}
-
-function genScript(callback) {
-    /* In this step, we'll generate script from our template script,
-    we'll figure out cross-compiling chain and latest kernel release together
-    with U-Boot (Currently remain manually updated) then fill into the script
-    */
-    var fn = tempfile({
-        path: '/tmp',
-        ext: '.sh'
-    });
-    var script;
-    ccchain = '/workspace/cross-gcc/bin/' + getCCChain();
-    var writeScript = (fn, data) => {
-        fs.open(fn, 'w+', (err, fd) => {
-            if (err) {
-                log.error('Builder: Error opening tempfile to write: ' + err);
-            }
-            fs.writeSync(fd, data);
-            return fn;
-        });
-    }
-    fs.open(__dirname + '/../utils/build_template.sh', 'r', (err, fd) => {
-        if (err) {
-            log.error('Builder: Unable to read template script! ' + err); // WTF?!!
-        }
-        var script = fs.readFileSync(fd, 'utf-8');
-        new Promise((res, rej) => {
-            script = script.replace('++CROSS_CHAIN++', ccchain);
-            getReleases((data) => {
-                script = script.replace('++LINUX_SRC++', data.kernel)
-                .replace('++UBOOT_SRC++', data.ub);
-                res();
-            });
-        }).then(() => {
-            fs.closeSync(fd);
-            writeScript(fn, script);
-            callback(fn);
-        });
-    });
-}
-
-exports.startBuild = () => {
+function startBuild(builder) {
     log.info('Docker API: Attempt to initialize a new build...');
     if (!docker) {
         log.error('Docker API: Initialization failure');
         return;
     }
     if (isBuilding()) {
-        log.warn('Docker API: Another build is in progress, bailing out...');
+        log.warn('Docker API: Another build is in progress, this one is queued...');
         return;
     }
-    var ccpath_copy = ccpath;
-    genScript((fn) => {
-      var logfn = tempfile({
-          path: './logs/',
-          ext: '.log'
-      });
-        docker.createContainer({
-            Image: imgName,
-            Tty: true,
-            Cmd: ['bash', '/workspace/builder.sh'],
-            Binds: [fn + ':/workspace/builder.sh:ro',
-            ccpath_copy + ':/workspace/cross-gcc:ro',
-            path.resolve('./out/') + ':/workspace/out:rw']  // Here we "mount" the generated script into the container
-        }, (err, container) => {
+    builder.preBuild((opts) => {
+        var logfn = tempfile({
+            path: '../logs/',
+            ext: '.log'
+        });
+        docker.createContainer(opts, (err, container) => {
             if (err) {
                 log.error('Docker API: Failed to create container: ' + err);
                 return;
             }
             containerObj = container;
             container.start((err, data) => {
-                dockerBuilder = {alive: true, startTime: Date.now() / 1000};
-                container.inspect(function (err, data) {
+                dockerBuilder = {
+                    alive: true,
+                    startTime: Date.now() / 1000
+                };
+                container.inspect(function(err, data) {
                     dockerBuilder.id = data.Config.Hostname;
                 });
                 container.attach({
@@ -200,21 +141,26 @@ exports.startBuild = () => {
                     stderr: true
                 }, (err, stream) => {
                     stream.on('end', () => {
-                      var EndTime = Date.now() / 1000;
-                      dockerBuilder.alive = false;
-                      dockerBuilder.stop = EndTime;
-                      socketio.broadcast('buildstop', EndTime);
-                      log_db.saveLogEntry(path.resolve(logfn), dockerBuilder);
+                        var EndTime = Date.now() / 1000;
+                        dockerBuilder.alive = false;
+                        dockerBuilder.stop = EndTime;
+                        socketio.broadcast('buildstop', EndTime);
+                        log_db.saveLogEntry(path.resolve(logfn), dockerBuilder);
+                        container.remove({}, () => {});
                     });
                     stream.pipe(through.obj((chunk, enc, callback) => {
-                      fs.writeFile(logfn, chunk.toString(), {flag: 'a'}, (err) => {return;});
-                      socketio.broadcast('termupdate', chunk.toString());
-                      callback();
+                        fs.writeFile(logfn, chunk.toString(), {
+                            flag: 'a'
+                        }, (err) => {
+                            return;
+                        });
+                        socketio.broadcast('termupdate', chunk.toString());
+                        callback();
                     }));
                 });
             });
         });
-    });  // end of genscript callbacks
+    }); // end of genscript callbacks
 }
 
 })();
