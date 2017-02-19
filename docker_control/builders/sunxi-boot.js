@@ -98,7 +98,7 @@ exports.preBuild = (done) => {
     });
     dockerOpts.Binds = [fn + ':/workspace/builder.sh:ro',
     ccpath + ':/workspace/cross-gcc:ro',
-    path.resolve('../out/') + ':/workspace/out:rw'];
+    path.resolve('./out/') + ':/workspace/out:rw'];
     // Here we "mount" the generated script into the container
     done(dockerOpts);
   });
