@@ -114,6 +114,7 @@ function startBuild(builder) {
     }
     if (isBuilding()) {
         log.warn('Docker API: Another build is in progress, this one is queued...');
+        if (queue[queue.length - 1] == builder) {return;}
         return;
     }
     builder.preBuild((opts) => {

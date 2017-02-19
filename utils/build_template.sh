@@ -10,22 +10,22 @@ echo "Downloading U-Boot source..."
 wget ++UBOOT_SRC++
 LINUX_SRC="$(echo linux-*.tar*)"
 UBOOT_SRC="$(echo u-boot-*.tar*)"
-LINUX_DIR="$(echo $LINUX_SRC | sed 's/\.tar\..*//g')"
+LINUX_DIR="$(echo "$LINUX_SRC" | sed 's/\.tar\..*//g')"
 git clone https://github.com/AOSC-Dev/aosc-os-armel-sunxi-boot
 echo "Building u-boot..."
 
 mkdir -p "$OUT_DIR"
 
 pushd "aosc-os-armel-sunxi-boot"
-ln -s ../${UBOOT_SRC} .
-ln -s ../${LINUX_SRC} .
+ln -s ../"${UBOOT_SRC}" .
+ln -s ../"${LINUX_SRC}" .
 chmod a+x ./list.sh
 . ./list.sh
 [ "$BUILD_UBOOT" != "0" ] &&
 for i in $UBOOT_TARGETS
 do
-	UBOOT_CNAME="$(echo $i | cut -d = -f 1)"
-	UBOOT_AOSCNAME="$(echo $i | cut -d = -f 2)"
+	UBOOT_CNAME="$(echo "$i" | cut -d = -f 1)"
+	UBOOT_AOSCNAME="$(echo "$i" | cut -d = -f 2)"
 	echo "Building u-boot for device $UBOOT_AOSCNAME..."
 	tar xf "$UBOOT_SRC"
 	UBOOT_DIR="$(echo u-boot-*/)"
@@ -38,7 +38,7 @@ do
 	mkdir -p "$LOG_DIR"/u-boot-"$UBOOT_AOSCNAME"
 	make "${UBOOT_CNAME}"_defconfig 2>&1
 	echo "Configured"
-	make CROSS_COMPILE="${CROSS_CHAIN}" -j$(nproc) 2>&1
+	make CROSS_COMPILE="${CROSS_CHAIN}" -j"$(nproc)" 2>&1
 	echo "Built"
 	mkdir -p "$OUT_DIR"/u-boot-"$UBOOT_AOSCNAME"/
 	cp u-boot-sunxi-with-spl.bin "$OUT_DIR"/u-boot-"$UBOOT_AOSCNAME"/
@@ -57,7 +57,7 @@ if [ "$BUILD_LINUX" != "0" ]; then
 		for i in ../patches/linux/*
 		do
 			echo " -- Patching with ${i}"
-			patch -Np1 -s -i $i >> patch.log
+			patch -Np1 -s -i "$i" >> patch.log
 		done
 	else
 		pushd "$LINUX_DIR"
@@ -83,7 +83,7 @@ if [ "$BUILD_LINUX" != "0" ]; then
 		popd
 		unset KDIR
 	done
-	depmod -b "$TMPDIR" "$(basename $(readlink -f $EXTRA_KMOD_DIR/../..))"
+	depmod -b "$TMPDIR" "$(basename "$(readlink -f $EXTRA_KMOD_DIR/../..)")"
 	echo "Extra modules built"
 	cp -r -- "$TMPDIR"/lib/modules/ "$OUT_DIR"/linux-sunxi-nokvm/
 	rm -r -- "$TMPDIR"
@@ -109,7 +109,7 @@ if [ "$BUILD_LINUX" != "0" ]; then
 		popd
 		unset KDIR
 	done
-	depmod -b "$TMPDIR" "$(basename $(readlink -f $EXTRA_KMOD_DIR/../..))"
+	depmod -b "$TMPDIR" "$(basename "$(readlink -f $EXTRA_KMOD_DIR/../..)")"
 	echo "Extra modules built"
 	cp -r "$TMPDIR"/lib/modules/ "$OUT_DIR"/linux-sunxi-kvm/
 	rm -r "$TMPDIR"
@@ -129,16 +129,16 @@ do
 	echo "Copied dtb for $DTB_AOSCNAME"
 done
 GIT_REV=$(git rev-parse --short HEAD)
-popd && popd
-FILE_COUNT=$(ls ${OUT_DIR} | wc -l)
+popd
+FILE_COUNT=$(find ${OUT_DIR} | wc -l)
 if [[ $((FILE_COUNT)) -lt 76 ]]; then
 	echo "No enough files collected, suspecting a build failure!"
 	exit 127
 fi
 echo "Tarring final tarball..."
-TARBALL_NAME="aosc-os-armel-sunxi-boot-$(date +%Y%m%d)-g${GIT_REV}-$(basename ${LINUX_DIR})-$(basename ${UBOOT_DIR})"
+TARBALL_NAME="aosc-os-armel-sunxi-boot-$(date +%Y%m%d)-g${GIT_REV}-$(basename "${LINUX_DIR}")-$(basename ${UBOOT_DIR})"
 mkdir "${STORE_DIR}"
-tar cJf ${STORE_DIR}/"${TARBALL_NAME}.tar.xz" "${OUT_DIR}/"*
+tar cJf "${STORE_DIR}/${TARBALL_NAME}.tar.xz" "${OUT_DIR}/"*
 FILE_SIZE=$(stat -c "%s" "${STORE_DIR}/${TARBALL_NAME}.tar.xz")
 if [[ $((FILE_SIZE)) -lt 20000000 ]]; then
 	echo "Resulting file too small (only ${FILE_SIZE} bytes), suspecting a build failure!"

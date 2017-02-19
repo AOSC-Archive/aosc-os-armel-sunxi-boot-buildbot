@@ -23,4 +23,5 @@ EOF
 
 popd
 dpkg-deb -b "${PKGDIR}"
-mv ./*.deb "/workspace/out/aosc-appstream-data_$(date +%Y%m%d)-0_noarch.deb"
+mv ./*.deb "/workspace/out/aosc-appstream-data_$(date +%Y%m%d)-0_noarch.deb" || exit 127
+#scp ./*.deb [private]/mirror/os-noarch/os3-dpkg/a/
