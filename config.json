@@ -1,2 +1,3 @@
 {"cross_compiler_path": "/opt/gcc-linaro/",
-  "docker": {"host": "127.0.0.1", "port": 8777}}
+  "docker": {"host": "127.0.0.1", "port": 8777},
+  "server": {"addr": "127.0.0.1", "port": 22, "key": "id.key"}}

@@ -23,5 +23,8 @@ EOF
 
 popd
 dpkg-deb -b "${PKGDIR}"
+PKGNAME="aosc-appstream-data_$(date +%Y%m%d)-0_noarch.deb"
+PKGLOC="/workspace/out/${PKGNAME}"
 mv ./*.deb "/workspace/out/aosc-appstream-data_$(date +%Y%m%d)-0_noarch.deb" || exit 127
-#scp ./*.deb [private]/mirror/os-noarch/os3-dpkg/a/
+ln -s [private] ~/.ssh
+scp -P 233 "${PKGLOC}" [private]/os-noarch/os3-dpkg/a/

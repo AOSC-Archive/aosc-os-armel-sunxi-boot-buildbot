@@ -5,14 +5,14 @@
   "main": "index.js",
   "dependencies": {
     "bluebird": "^3.4.7",
-    "body-parser": "^1.16.0",
-    "dockerode": "^2.3.1",
-    "express": "^4.14.1",
+    "body-parser": "^1.17.0",
+    "dockerode": "^2.3.2",
+    "express": "^4.15.0",
     "express-github-webhook": "^1.0.5",
     "pug": "^2.0.0-beta11",
     "redis": "^2.6.5",
     "request": "^2.79.0",
-    "socket.io": "^1.7.2",
+    "socket.io": "^1.7.3",
     "tempfile2": "^2.0.2",
     "through2": "^2.0.3"
   },

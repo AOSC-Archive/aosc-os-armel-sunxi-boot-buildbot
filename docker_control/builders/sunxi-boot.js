@@ -18,7 +18,7 @@ let dockerOpts = {
 
 function getReleases(callback) {
     var releases = {};
-    const u_boot = 'ftp://ftp.denx.de/pub/u-boot/u-boot-2017.03-rc1.tar.bz2';
+    const u_boot = 'ftp://ftp.denx.de/pub/u-boot/u-boot-2017.03-rc3.tar.bz2';
     releases.ub = u_boot;
     request.get({
         url: 'https://www.kernel.org/releases.json',
@@ -30,7 +30,7 @@ function getReleases(callback) {
         }
         let latest = data.latest_stable.version;
         for (let i of data.releases) {
-            if (i.version == latest) {
+            if (i.moniker == "mainline") {
                 releases.kernel = i.source;
             }
         }
